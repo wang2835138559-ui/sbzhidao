@@ -1,11 +1,12 @@
 // ==UserScript==
-// @name         知到智慧树掌握度答题-AI自动答题脚本(Zhihuishu AI Auto-Answering)
+// @name         知到智慧树掌握度练习自动跳转脚本
 // @namespace    https://github.com/Cooanyh/zhihuishu-zhangwodu
-// @version      3.0.2
-// @description  全自动完成智慧树掌握度练习。适配新版UI(ai-smart-course-student-pro)，支持多页面布局适配、智能弹窗探测与精准匹配。集成题库搜索与多种AI服务商(DeepSeek/Zhipu/OpenAI/Gemini/Coren)自动Fallback。
+// @version      3.0.3
+// @description  进入掌握度/分析页后自动跳转到练习页；不自动答题、不选择选项、不提交。
 // @author       Coren
 // @match        https://*.zhihuishu.com/*
 // @match        https://ai-smart-course-student-pro.zhihuishu.com/singleCourse/gradeAnalysis*
+// @run-at       document-idle
 // @connect      api.coren.xin
 // @connect      open.bigmodel.cn
 // @connect      api.deepseek.com
@@ -44,7 +45,7 @@
     const panelHTML = `
         <button id="panel-toggle">AI</button>
         <div id="ai-panel">
-            <div id="panel-header">AI 自动答题设置</div>
+            <div id="panel-header">掌握度自动跳转设置</div>
             <div id="panel-content">
                 <div class="input-group">
                     <label for="mode-select">答题模式:</label>
@@ -96,7 +97,7 @@
                         <input type="password" id="api-key" placeholder="在此输入你的API Key">
                     </div>
                 </div>
-                <button id="start-button">开始自动答题</button>
+                <button id="start-button">手动执行跳转</button>
                 <div id="status-log">状态日志...</div>
             </div>
         </div>
@@ -263,7 +264,7 @@
     refreshQuizbankButton.addEventListener('click', fetchQuizBank);
 
 
-    startButton.addEventListener('click', () => toggleAutoMode(!autoMode));
+    startButton.addEventListener('click', () => autoJumpToPractice(true));
     updateUIVisibility();
 
     // --- 5.核心功能函数 ---
@@ -927,30 +928,64 @@
     }
 
 
-    function mainLoop() {
-        if (!autoMode) return;
+    function isJumpSourcePage(url) {
+        return url.includes('/study/mastery') ||
+            url.includes('/study/analysis') ||
+            url.includes('gradeAnalysis');
+    }
+
+    function isPracticePage(url) {
+        return url.includes('/exam') ||
+            url.includes('studentReviewTestOrExam');
+    }
+
+    let autoJumping = false;
+    let lastAutoJumpUrl = '';
+
+    async function autoJumpToPractice(manual = false) {
         const currentUrl = window.location.href;
-        // 兼容旧版 studywisdomh5/wisdom-mooc + 新版 ai-smart-course-student-pro
-        if (currentUrl.includes('/study/mastery') || currentUrl.includes('/study/analysis') || currentUrl.includes('gradeAnalysis')) {
-            findAndScrollToIncompleteItem();
-        } else if (currentUrl.includes('/exam') || currentUrl.includes('studentReviewTestOrExam')) {
-            processTestPage();
-        } else if (currentUrl.includes('/pointOfMastery') || currentUrl.includes('result')) {
-            processResultsPage();
+
+        if (isPracticePage(currentUrl)) {
+            log("当前已经进入练习页，跳转脚本停止；不会自动答题。");
+            return;
+        }
+
+        if (!isJumpSourcePage(currentUrl)) {
+            if (manual) log("当前不是掌握度/分析页，未执行跳转。");
+            return;
+        }
+
+        if (!manual && lastAutoJumpUrl === currentUrl) return;
+        if (autoJumping) return;
+
+        autoJumping = true;
+        lastAutoJumpUrl = currentUrl;
+        startButton.disabled = true;
+        startButton.textContent = '正在跳转...';
+        startButton.style.backgroundColor = '#6c757d';
+
+        try {
+            log(manual ? "手动执行跳转..." : "检测到目标页面，自动执行跳转...");
+            await findAndScrollToIncompleteItem();
+        } finally {
+            autoMode = false;
+            autoJumping = false;
+            startButton.disabled = false;
+            startButton.textContent = '手动执行跳转';
+            startButton.style.backgroundColor = '#198754';
         }
     }
 
+    function mainLoop() {
+        autoJumpToPractice(false);
+    }
+
     function toggleAutoMode(start) {
-        autoMode = start;
-        if (autoMode) {
-            startButton.textContent = '停止自动答题';
-            startButton.style.backgroundColor = '#dc3545';
-            log('自动答题已开始！');
-            mainLoop();
+        if (start) {
+            autoJumpToPractice(true);
         } else {
-            startButton.textContent = '开始自动答题';
-            startButton.style.backgroundColor = '#198754';
-            log('自动答题已停止。');
+            autoMode = false;
+            log('跳转已停止。');
         }
     }
 
@@ -961,16 +996,15 @@
         if (url !== lastUrl) {
             lastUrl = url;
             log(`URL 变动: ${url}`);
-            if (autoMode) setTimeout(mainLoop, 2000);
+            setTimeout(() => autoJumpToPractice(false), 2000);
         }
     }).observe(document, { subtree: true, childList: true });
 
     window.addEventListener('load', () => {
-        log("AI答题脚本已加载 (v3.0.2 弹窗触发修复版)。请在右侧面板选择模式并开始。");
-        // 启动时自动加载题库
-        if (GM_getValue('answer_mode', 'free') === 'quizbank' && GM_getValue('quizbank_url', '')) {
-            fetchQuizBank();
-        }
+        log("自动跳转脚本已加载：进入掌握度/分析页会自动跳转；不会自动答题。");
+        setTimeout(() => autoJumpToPractice(false), 1200);
     }, false);
+
+    setTimeout(() => autoJumpToPractice(false), 1500);
 
 })();
