@@ -22,7 +22,7 @@
     
     // 配置参数
     const CONFIG = {
-        submitWaitTime: 120,    // 提交前等待时间（秒）
+        submitWaitTime: 70,    // 提交前等待时间（秒）
         jumpWaitTime: 10,      // 跳转前等待时间（秒）
         checkInterval: 1000    // 检查按钮的间隔（毫秒）
     };
