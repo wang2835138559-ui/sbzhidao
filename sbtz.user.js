@@ -29,7 +29,7 @@
     
     // 页面URL
     const FIRST_PAGE_URL = "https://studentexamcomh5.zhihuishu.com/studentReviewTestOrExam";
-    const SECOND_PAGE_URL = "https://ai-smart-course-student-pro.zhihuishu.com/singleCourse/gradeAnalysis/2027679343719124992/158526?mapUid=1807676095319904256";
+    const SECOND_PAGE_URL = "https://ai-smart-course-student-pro.zhihuishu.com/singleCourse/gradeAnalysis/2031261188964069376/183323?mapUid=1819278690631159808";
     
     let submitButton = null;
     let timerId = null;  // 修改：将 intervalId 改为 timerId 避免冲突
