@@ -14,7 +14,7 @@
   'use strict';
 
   const sourcePath = '/point';
-  const targetUrl = 'https://ai-smart-course-student-pro.zhihuishu.com/singleCourse/gradeAnalysis/2027679343719124992/158526?mapUid=1807676095319904256';
+  const targetUrl = 'https://ai-smart-course-student-pro.zhihuishu.com/singleCourse/gradeAnalysis/2031261188964069376/183323?mapUid=1819278690631159808';
   let redirected = false;
 
   function shouldRedirect() {
